@@ -3,8 +3,8 @@ import requests
 import pymongo
 
 # %%
-MAX_COMMENT = 20    #each stock should have max 20 comments
-MAX_REPLY = 6   #each comment should have max 6 comments
+MAX_COMMENT = 15    #each stock should have max 20 comments
+MAX_REPLY = 5   #each comment should have max 6 comments
 MAX_LIKE = 50   #each comment or like should have max 50 likes
 MIN_COMMENT_TIMESTAMP = 1705571059  #sec (18 Jan 2024)
 
