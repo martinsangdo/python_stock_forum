@@ -233,7 +233,13 @@ if symbol != '':
                 if len(reply_list) > 0:
                     for str_reply in reply_list:
                         insert_reply(str_reply, comment_detail)
-        print('Finish symbol ' + symbol)
+    else:
+        #somehow cannot get detail of this stock, mark it to process later
+        tbl_stock.update_one({'symbol': symbol}, {'$set':{
+                "name" : "no_detail"
+            }})
+    print('Finish symbol ' + symbol)
+
 
 # %%
 
