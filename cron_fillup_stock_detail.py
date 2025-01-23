@@ -53,6 +53,16 @@ def custom_query(get_url):
        return r
 
 # %%
+import random
+
+def get_random_like():
+    return random.randint(0, MAX_LIKE)
+
+# %%
+def get_random_number(max_num):
+    return random.randint(1, max_num)
+
+# %%
 import re
 import json
 
@@ -116,8 +126,10 @@ def post_request_gemini(text_prompt):
 
 # %%
 def get_rand_comments():
+    comment_num = get_random_number(MAX_COMMENT)
     #generate random posts for each stock
-    fake_comments = post_request_gemini('Generate 0 up to '+str(MAX_COMMENT)+' random comments for this stock symbol ' + symbol +" natually as human saying. Each setence should have 30 to 50 words length.") #10 sec
+    fake_comments = post_request_gemini('Generate '+str(comment_num)+' random comments for this stock symbol ' + symbol +" natually as human saying. Each setence should have 30 to 50 words length.") #10 sec
+    # print(fake_comments)
     raw_comments = fake_comments['candidates'][0]['content']['parts'][0]['text']
     #extract json structure
     json_comments = extract_json(raw_comments)
@@ -125,9 +137,10 @@ def get_rand_comments():
 
 # %%
 def get_rand_relies(str_comment):
+    reply_num = get_random_number(MAX_REPLY)
     reply_list = []
     #generate random relies for the comment
-    fake_replies = post_request_gemini('Generate 0 up to '+str(MAX_REPLY)+' random replies for the comment: ' + str_comment +' of this stock symbol '+symbol+' natually as human saying. Each reply should have 10 to 20 words length.') #10 sec
+    fake_replies = post_request_gemini('Generate '+str(reply_num)+' random replies for the comment: ' + str_comment +' of this stock symbol '+symbol+' natually as human saying. Each reply should have 10 to 20 words length.') #10 sec
     if 'candidates' in fake_replies:
         raw_replies = fake_replies['candidates'][0]['content']['parts'][0]['text']
         #extract json structure
@@ -144,12 +157,6 @@ def generate_random_uuid():
 
 # %%
 import random
-
-def get_random_like():
-    return random.randint(0, MAX_LIKE)
-
-# %%
-import random
 import time
 
 def get_random_timestamp(start_time):
@@ -161,6 +168,7 @@ def get_random_timestamp(start_time):
 
 # %%
 def insert_comment(str_comment):
+    #print(str_comment)
     #get random user
     random_name = tbl_user.aggregate([{"$sample": {"size": 1}}]).next()
     username = random_name['usr']
@@ -212,17 +220,9 @@ if symbol != '':
     stock_detail = custom_query(stock_detail_url)
     #print(stock_detail)
     if stock_detail is not None and 'name' in stock_detail:
-        #update stock info to db
-        tbl_stock.update_one({'symbol': symbol}, {'$set':{
-                'name': stock_detail['name'],
-                'industry': stock_detail['finnhubIndustry'],
-                'ipo': stock_detail['ipo'],
-                'cap': stock_detail['marketCapitalization'],
-                'web': stock_detail['weburl']
-            }})
         #generate and save comments
         comment_list = get_rand_comments()
-        #print(comment_list)
+        # print(comment_list)
         if len(comment_list) > 0:
             #take each comment
             for json_comment in comment_list:
@@ -233,6 +233,14 @@ if symbol != '':
                 if len(reply_list) > 0:
                     for str_reply in reply_list:
                         insert_reply(str_reply, comment_detail)
+        #update stock info to db
+        tbl_stock.update_one({'symbol': symbol}, {'$set':{
+                'name': stock_detail['name'],
+                'industry': stock_detail['finnhubIndustry'],
+                'ipo': stock_detail['ipo'],
+                'cap': stock_detail['marketCapitalization'],
+                'web': stock_detail['weburl']
+            }})
     else:
         #somehow cannot get detail of this stock, mark it to process later
         tbl_stock.update_one({'symbol': symbol}, {'$set':{
