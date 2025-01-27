@@ -36,8 +36,11 @@ tbl_reply = collections['tbl_reply']
 db_stock = tbl_stock.find_one({'name': None})
 
 symbol = ''
+is_otc = False
 if db_stock is not None:
     symbol = db_stock['symbol']
+    if 'is_otc' in db_stock:
+        is_otc = db_stock['is_otc']
     print('symbol: ' + symbol)
 
 # %%
@@ -129,7 +132,7 @@ def get_rand_comments():
     comment_num = get_random_number(MAX_COMMENT)
     #generate random posts for each stock
     fake_comments = post_request_gemini('Generate '+str(comment_num)+' random comments for this stock symbol ' + symbol +" natually as human saying. Each setence should have 30 to 50 words length.") #10 sec
-    # print(fake_comments)
+    #print(fake_comments)
     raw_comments = fake_comments['candidates'][0]['content']['parts'][0]['text']
     #extract json structure
     json_comments = extract_json(raw_comments)
@@ -220,19 +223,20 @@ if symbol != '':
     stock_detail = custom_query(stock_detail_url)
     #print(stock_detail)
     if stock_detail is not None and 'name' in stock_detail:
-        #generate and save comments
-        comment_list = get_rand_comments()
-        # print(comment_list)
-        if len(comment_list) > 0:
-            #take each comment
-            for json_comment in comment_list:
-                #save comment to db
-                comment_detail = insert_comment(json_comment['comment'])
-                reply_list = get_rand_relies(json_comment['comment'])
-                #print(reply_list)
-                if len(reply_list) > 0:
-                    for str_reply in reply_list:
-                        insert_reply(str_reply, comment_detail)
+        #generate and save comments (only for valid stock)
+        if is_otc:
+            comment_list = get_rand_comments()
+            print('Comment number: ' + str(len(comment_list)))
+            if len(comment_list) > 0:
+                #take each comment
+                for json_comment in comment_list:
+                    #save comment to db
+                    comment_detail = insert_comment(json_comment['comment'])
+                    reply_list = get_rand_relies(json_comment['comment'])
+                    #print(reply_list)
+                    if len(reply_list) > 0:
+                        for str_reply in reply_list:
+                            insert_reply(str_reply, comment_detail)
         #update stock info to db
         tbl_stock.update_one({'symbol': symbol}, {'$set':{
                 'name': stock_detail['name'],
